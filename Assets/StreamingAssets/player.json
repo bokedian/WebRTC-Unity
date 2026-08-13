@@ -1,0 +1,16 @@
+{
+    "id": 123,
+    "PlayerName": "Sonder",
+    "maxHp": 100,
+    "maxMp": 120.5,
+    "attack": 10.5,
+    "defense": 2,
+    "enemys": [
+        {
+            "Name": "老三"
+        },
+        {
+            "Name": "老四"
+        }
+    ]
+}
