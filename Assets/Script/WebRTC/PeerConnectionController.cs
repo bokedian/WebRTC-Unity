@@ -139,6 +139,7 @@ public sealed class PeerConnectionController : IDisposable
     private VideoStreamTrack _videoTrack;
     public event Action<Texture> OnVideoReceive;
     public VideoStreamTrack _remoteVideoTrack;
+    private RTCRtpSender _videoSender;
     public void Init()
     {
         _config.iceServers = new RTCIceServer[]
@@ -383,8 +384,11 @@ public sealed class PeerConnectionController : IDisposable
     }
     public void CreateVideoTrack(Camera camera)
     {
+        //RenderTexture texture = new RenderTexture(1920, 1080, 0);
+        //texture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B8G8R8A8_SRGB;
+        //camera.targetTexture = texture;
         _videoTrack = new VideoStreamTrack(camera.targetTexture);
-        _peer.AddTrack(_videoTrack);
+        _videoSender = _peer.AddTrack(_videoTrack);
         Debug.Log("[Peer] VideoTrack added");
     }
 
@@ -393,6 +397,81 @@ public sealed class PeerConnectionController : IDisposable
         Debug.Log("[Peer] OnVideoReceived");
         OnVideoReceive?.Invoke(texture);
     }
+
+    public void SetVideoFramerate(uint framerate)
+    {
+        if (_videoSender == null)
+        {
+            Debug.Log("[Peer] No videoSender");
+            return;
+        }
+
+        RTCRtpSendParameters parameters = _videoSender.GetParameters();
+        foreach (var encoding in parameters.encodings)
+        {
+            encoding.maxFramerate = framerate;
+        }
+
+        RTCError error = _videoSender.SetParameters(parameters);//大概是返回结果
+
+        if(error.errorType!= RTCErrorType.None)
+        {
+            Debug.Log($"[Peer][Video] SetFramerate failed: {error.message}");
+            return;
+        }
+        Debug.Log($"[Peer][Video] maxFramerate={framerate}");
+    }
+    /// <summary>
+    /// 默认的分辨率为1920*1080
+    /// </summary>
+    /// <param name="scale"></param>
+    public void SetVideoResolutionScale(double scale)
+    {
+        if (_videoSender == null)
+        {
+            Debug.LogWarning("[Peer] Video sender is null");
+            return;
+        }
+
+        RTCRtpSendParameters parameters = _videoSender.GetParameters();
+        //这个scale是被除数，长和宽都会除。scale=2，则size是960*540
+
+        foreach (RTCRtpEncodingParameters encoding in parameters.encodings)
+        {
+            encoding.scaleResolutionDownBy = scale;
+        }
+
+        RTCError error = _videoSender.SetParameters(parameters);
+
+        if (error.errorType != RTCErrorType.None)
+        {
+            Debug.LogError($"[Video] SetResolutionScale failed: {error.message}");
+            return;
+        }
+
+        Debug.Log($"[Video] ScaleResolutionDownBy = {scale}");
+    }
+
+    public void PrintVideoParameters()
+    {
+        if (_videoSender == null)
+        {
+            Debug.LogWarning("[Peer] Video sender is null");
+            return;
+        }
+
+        RTCRtpSendParameters parameters = _videoSender.GetParameters();
+
+        Debug.Log($"[Video] Encoding count: {parameters.encodings.Length}");
+
+        for (int i = 0; i < parameters.encodings.Length; i++)
+        {
+            RTCRtpEncodingParameters encoding = parameters.encodings[i];
+
+            Debug.Log($"[Video] Encoding {i}: active={encoding.active}, maxBitrate={encoding.maxBitrate}, maxFramerate={encoding.maxFramerate}, scaleResolutionDownBy={encoding.scaleResolutionDownBy}");
+        }
+    }
+
     #endregion
     public async Task<string> CreateOfferAsync()
     {

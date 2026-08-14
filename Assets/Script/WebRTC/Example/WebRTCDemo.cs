@@ -43,10 +43,37 @@ public class WebRTCDemo : MonoBehaviour
         {
             if (sessionManager.remoteVideoTrack != null)
             {
-                Debug.Log("Set Texture");
+                //Debug.Log("Set Texture");
                 rawImage.texture = sessionManager.remoteVideoTrack.Texture;
             }
         }
+#if UNITY_EDITOR
+        //发送方
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            sessionManager.SetFramerate(30);
+        }
+
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            sessionManager.SetFramerate(60);
+        }
+
+        //if (Input.GetKeyDown(KeyCode.UpArrow))
+        //{
+        //    sessionManager.SetVideoSize(1);
+        //}
+
+        //if (Input.GetKeyDown(KeyCode.DownArrow))
+        //{
+        //    sessionManager.SetVideoSize(2);
+        //}
+        //接收方
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            sessionManager.PrintVideoParam();
+        }
+#endif
     }
     private void HandleLog(string condition, string stackTrace, LogType type)
     {
@@ -63,7 +90,8 @@ public class WebRTCDemo : MonoBehaviour
         {
             File.Create(path);
         }
-        File.AppendAllText(path, condition);
+        string content = "\n" + condition;
+        File.AppendAllText(path, content);
 #endif
     }
     private async void ConnectBtn_OnClick()

@@ -90,6 +90,21 @@ public sealed class SessionManager : IDisposable
         }
     }
 
+    public void SetFramerate(uint rate)
+    {
+        _peerConnection.SetVideoFramerate(rate);
+    }
+
+    public void SetVideoSize(double scale)
+    {
+        _peerConnection.SetVideoResolutionScale(scale);
+    }
+
+    public void PrintVideoParam()
+    {
+        _peerConnection.PrintVideoParameters();
+    }
+
     private async Task HandleOfferAsync(SignalMessage message)
     {
         Debug.Log("[Session] Receive Offer");
