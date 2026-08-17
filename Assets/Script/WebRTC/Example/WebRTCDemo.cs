@@ -58,20 +58,10 @@ public class WebRTCDemo : MonoBehaviour
         {
             sessionManager.SetFramerate(60);
         }
-
-        //if (Input.GetKeyDown(KeyCode.UpArrow))
-        //{
-        //    sessionManager.SetVideoSize(1);
-        //}
-
-        //if (Input.GetKeyDown(KeyCode.DownArrow))
-        //{
-        //    sessionManager.SetVideoSize(2);
-        //}
-        //Ω” ’∑Ω
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            sessionManager.PrintVideoParam();
+            //sessionManager.PrintVideoParam();
+            
         }
 #endif
     }

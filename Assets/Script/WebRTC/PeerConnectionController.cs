@@ -140,6 +140,8 @@ public sealed class PeerConnectionController : IDisposable
     public event Action<Texture> OnVideoReceive;
     public VideoStreamTrack _remoteVideoTrack;
     private RTCRtpSender _videoSender;
+    private RTCRtpReceiver _videoReceiver;
+    public WebRTCVideoStats VideoStats { get; } = new WebRTCVideoStats();
     public void Init()
     {
         _config.iceServers = new RTCIceServer[]
@@ -451,7 +453,9 @@ public sealed class PeerConnectionController : IDisposable
 
         Debug.Log($"[Video] ScaleResolutionDownBy = {scale}");
     }
-
+    /// <summary>
+    /// 发送方的数据，只是发送限制，并非真实发送情况
+    /// </summary>
     public void PrintVideoParameters()
     {
         if (_videoSender == null)
@@ -469,6 +473,18 @@ public sealed class PeerConnectionController : IDisposable
             RTCRtpEncodingParameters encoding = parameters.encodings[i];
 
             Debug.Log($"[Video] Encoding {i}: active={encoding.active}, maxBitrate={encoding.maxBitrate}, maxFramerate={encoding.maxFramerate}, scaleResolutionDownBy={encoding.scaleResolutionDownBy}");
+        }
+    }
+
+    private void UpdateStatus()
+    {
+        if (_videoSender != null)
+        {
+            VideoStats.UpdateSender(_videoSender);
+        }
+        if (_videoReceiver != null)
+        {
+            VideoStats.UpdateReceiver(_videoReceiver);
         }
     }
 
