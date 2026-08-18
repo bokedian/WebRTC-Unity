@@ -136,12 +136,14 @@ public sealed class PeerConnectionController : IDisposable
     public event Action<PeerChannel> DataChannelClosed;
     public event Action<PeerChannel, byte[]> DataChannelMessageReceived;
     #endregion
+    #region 视频流变量
     private VideoStreamTrack _videoTrack;
     public event Action<Texture> OnVideoReceive;
     public VideoStreamTrack _remoteVideoTrack;
     private RTCRtpSender _videoSender;
     private RTCRtpReceiver _videoReceiver;
     public WebRTCVideoStats VideoStats { get; } = new WebRTCVideoStats();
+    #endregion
     public void Init()
     {
         _config.iceServers = new RTCIceServer[]
@@ -381,7 +383,9 @@ public sealed class PeerConnectionController : IDisposable
         {
             Debug.Log("[Peer] Receive VideoTrack");
             _remoteVideoTrack = videoTrack;
+            _videoReceiver = e.Receiver;
             _remoteVideoTrack.OnVideoReceived += OnVideoReceived;
+            VideoStats.Start(_videoSender, _videoReceiver);
         }
     }
     public void CreateVideoTrack(Camera camera)
@@ -391,6 +395,7 @@ public sealed class PeerConnectionController : IDisposable
         //camera.targetTexture = texture;
         _videoTrack = new VideoStreamTrack(camera.targetTexture);
         _videoSender = _peer.AddTrack(_videoTrack);
+        VideoStats.Start(_videoSender, _videoReceiver);
         Debug.Log("[Peer] VideoTrack added");
     }
 
@@ -424,7 +429,7 @@ public sealed class PeerConnectionController : IDisposable
         Debug.Log($"[Peer][Video] maxFramerate={framerate}");
     }
     /// <summary>
-    /// 默认的分辨率为1920*1080
+    /// 默认的分辨率为1920*1080，不建议用，会导致unity卡死
     /// </summary>
     /// <param name="scale"></param>
     public void SetVideoResolutionScale(double scale)
@@ -473,18 +478,6 @@ public sealed class PeerConnectionController : IDisposable
             RTCRtpEncodingParameters encoding = parameters.encodings[i];
 
             Debug.Log($"[Video] Encoding {i}: active={encoding.active}, maxBitrate={encoding.maxBitrate}, maxFramerate={encoding.maxFramerate}, scaleResolutionDownBy={encoding.scaleResolutionDownBy}");
-        }
-    }
-
-    private void UpdateStatus()
-    {
-        if (_videoSender != null)
-        {
-            VideoStats.UpdateSender(_videoSender);
-        }
-        if (_videoReceiver != null)
-        {
-            VideoStats.UpdateReceiver(_videoReceiver);
         }
     }
 
