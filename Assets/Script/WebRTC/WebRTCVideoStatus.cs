@@ -33,16 +33,9 @@ public class WebRTCVideoStats
     {
         while (!token.IsCancellationRequested)
         {
+            await Task.Delay(1000, token);
             await UpdateStats(sender, receiver);
-
-            try
-            {
-                await Task.Delay(1000, token);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
+           
         }
     }
 
@@ -91,7 +84,14 @@ public class WebRTCVideoStats
             if (stat is RTCOutboundRTPStreamStats outbound)
             {
                 Outbound.Update(outbound);
-                OnOutboundStatsUpdated?.Invoke(Outbound);
+                try
+                {
+                    OnOutboundStatsUpdated?.Invoke(Outbound);
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                }               
                 break;
             }
         }
@@ -111,10 +111,18 @@ public class WebRTCVideoStats
             if(stat is RTCInboundRTPStreamStats inbound)
             {
                 Inbound.Update(inbound);
-                OnInboundStatsUpdated?.Invoke(Inbound);
+                try
+                {
+                    OnInboundStatsUpdated?.Invoke(Inbound);
+                }
+                catch(Exception e)
+                {
+                    Debug.Log(e);
+                }                
                 break;
             }
         }
+        await Task.CompletedTask;
     }
 }
 
@@ -122,6 +130,7 @@ public class OutboundVideoStats
 {
     //webrtc原始数据
     public bool IsActive { get; private set; }
+    //public Texture Texture;
     public ulong Ssrc { get; private set; }
     //RTP发送
     public ulong PacketsSent { get; private set; }
@@ -130,8 +139,8 @@ public class OutboundVideoStats
     public ulong FramesEncoded { get; private set; }
     public ulong FramesSent { get; private set; }
 
-    public uint FrameWidth { get; private set; }
-    public uint FrameHeight { get; private set; }
+    public int FrameWidth { get; private set; }
+    public int FrameHeight { get; private set; }
     public double FramesPerSecond { get; private set; }
 
     //码率
@@ -139,7 +148,7 @@ public class OutboundVideoStats
     public double Bitrate { get; private set; }
     //编码
     public double TotalEncodeTime { get; private set; }
-    public string EncoderImplementation { get; private set; }//实际使用的什么解码器
+    public string EncoderImplementation { get; private set; }//实际使用的什么编码器
 
     //质量限制
     public string QualityLimitationReason { get; private set; }//受影响的原因
@@ -161,8 +170,6 @@ public class OutboundVideoStats
         FramesEncoded = stats.framesEncoded;
         FramesSent = stats.framesSent;
 
-        FrameWidth = stats.frameWidth;
-        FrameHeight = stats.frameHeight;
 
         FramesPerSecond = stats.framesPerSecond;
 
@@ -199,7 +206,6 @@ public class OutboundVideoStats
     public void Reset()
     {
         Ssrc = 0;
-
         PacketsSent = 0;
         BytesSent = 0;
 
@@ -230,7 +236,7 @@ public class InboundVideoStats
 {
     //基础信息
     public ulong Ssrc { get; private set; }
-
+    //public Texture Texture;
 
     //RTP接收
     public ulong PacketsReceived { get; private set; }
@@ -241,8 +247,8 @@ public class InboundVideoStats
     public ulong FramesReceived { get; private set; }
     public ulong FramesDecoded { get; private set; }
 
-    public uint FrameWidth { get; private set; }
-    public uint FrameHeight { get; private set; }
+    public int FrameWidth { get; private set; }
+    public int FrameHeight { get; private set; }
 
     public double FramesPerSecond { get; private set; }
 
@@ -265,13 +271,12 @@ public class InboundVideoStats
 
     public void Update(RTCInboundRTPStreamStats stats)
     {
+        Debug.Log("In Update");
         Ssrc = stats.ssrc;
         PacketsReceived = stats.packetsReceived;
         BytesReceived = stats.bytesReceived;
         FramesReceived = stats.framesReceived;
         FramesDecoded = stats.framesDecoded;
-        FrameWidth = stats.frameWidth;
-        FrameHeight = stats.frameHeight;
         FramesPerSecond = stats.framesPerSecond;
         TotalDecodeTime = stats.totalDecodeTime;
         DecoderImplementation = stats.decoderImplementation;

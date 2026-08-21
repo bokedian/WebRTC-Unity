@@ -100,11 +100,6 @@ public sealed class SessionManager : IDisposable
         _peerConnection.SetVideoResolutionScale(scale);
     }
 
-    public void PrintVideoParam()
-    {
-        _peerConnection.PrintVideoParameters();
-    }
-
     private async Task HandleOfferAsync(SignalMessage message)
     {
         Debug.Log("[Session] Receive Offer");
@@ -143,9 +138,14 @@ public sealed class SessionManager : IDisposable
         _peerConnection.Send(label, message);
     }
 
-    public void CreateTrack(Camera cam)
+    public void CreateVideoTrack(Camera cam)
     {
         _peerConnection.CreateVideoTrack(cam);
+    }
+
+    public void CreateAudioTrack(AudioSource source)
+    {
+        _peerConnection.CreateAudioTrack(source);
     }
     public void PrintPeerCandidate()
     {

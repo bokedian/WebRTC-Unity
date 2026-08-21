@@ -22,6 +22,9 @@ public class WebRTCDemo : MonoBehaviour
     private PeerConnectionController peer;
     private SessionManager sessionManager;
     private WebSocketSignalingClient signalingClient;
+
+    public AudioSource localAudioSource;
+    public AudioSource remoteAudioSource;
     void Start()
     {
         signalingClient = new WebSocketSignalingClient();
@@ -34,40 +37,38 @@ public class WebRTCDemo : MonoBehaviour
         CreateChannelBtn.onClick.AddListener(CreateChannelBtn_OnClick);
         Application.logMessageReceivedThreaded += HandleLog;
         StartCoroutine(WebRTC.Update());
+        //添加视频的回调事件
+        peer.VideoStats.OnOutboundStatsUpdated += HandleOutBound;
+        peer.VideoStats.OnInboundStatsUpdated += HandleInBound;
+        peer.remoteAudioSource = remoteAudioSource;
     }
 
 
     private void Update()
     {
-        if (sessionManager != null)
+        //if (sessionManager != null)
+        //{
+        //    if (sessionManager.remoteVideoTrack != null)
+        //    {
+        //        //Debug.Log("Set Texture");
+        //        rawImage.texture = sessionManager.remoteVideoTrack.Texture;
+        //    }
+        //}
+
+        if (Input.GetKeyDown(KeyCode.UpArrow))
         {
-            if (sessionManager.remoteVideoTrack != null)
-            {
-                //Debug.Log("Set Texture");
-                rawImage.texture = sessionManager.remoteVideoTrack.Texture;
-            }
-        }
-#if UNITY_EDITOR
-        //发送方
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            sessionManager.SetFramerate(30);
+            localAudioSource.Play();
         }
 
-        if (Input.GetKeyDown(KeyCode.RightArrow))
+        if (Input.GetKeyDown(KeyCode.DownArrow))
         {
-            sessionManager.SetFramerate(60);
+            localAudioSource.Pause();
         }
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            //sessionManager.PrintVideoParam();
-            
-        }
-#endif
+
     }
     private void HandleLog(string condition, string stackTrace, LogType type)
     {
-        log.text = condition;
+        //log.text = condition;
 #if !UNITY_EDITOR
         string rootpath = Directory.GetParent(Application.dataPath).FullName;
         string logDirectory = Path.Combine(rootpath, "Logs");
@@ -111,7 +112,8 @@ public class WebRTCDemo : MonoBehaviour
 
     private async void CreateOfferBtn_OnClick()
     {
-        sessionManager.CreateTrack(testCam);
+        //sessionManager.CreateVideoTrack(testCam);
+        sessionManager.CreateAudioTrack(localAudioSource);
         await sessionManager.StartOfferAsync(RemoteId.text);
     }
 
@@ -121,6 +123,19 @@ public class WebRTCDemo : MonoBehaviour
         sessionManager.CreateDataChannel(label);
     }
 
+    private void HandleOutBound(OutboundVideoStats stats)
+    {
+        Debug.Log($"[发送端]: 分辨率:{testCam.targetTexture.width}*{testCam.targetTexture.height} 发送帧率:{stats.FramesPerSecond} ");
+        Debug.Log($"[发送端]: FrameEncoded:{stats.FramesEncoded} FramesSent:{stats.FramesSent} ");
+        Debug.Log($"[发送端]: 实际编码器:{stats.EncoderImplementation} 受影响原因:{stats.QualityLimitationReason} ");
+    }
+
+    private void HandleInBound(InboundVideoStats stats)
+    {
+        Debug.Log($"[接收端]: 分辨率:{rawImage.texture.width}*{rawImage.texture.height} 帧率:{stats.FramesPerSecond} ");
+        Debug.Log($"[接收端]: FramesDecoded:{stats.FramesDecoded} FramesReceived:{stats.FramesReceived} ");
+        Debug.Log($"[接收端]: 实际解码器:{stats.DecoderImplementation}");
+    }
     private async void OnDestroy()
     {
         Application.logMessageReceivedThreaded -= HandleLog;

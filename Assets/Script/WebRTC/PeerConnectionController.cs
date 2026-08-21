@@ -142,7 +142,16 @@ public sealed class PeerConnectionController : IDisposable
     public VideoStreamTrack _remoteVideoTrack;
     private RTCRtpSender _videoSender;
     private RTCRtpReceiver _videoReceiver;
-    public WebRTCVideoStats VideoStats { get; } = new WebRTCVideoStats();
+    public WebRTCVideoStats VideoStats;
+    #endregion
+
+    #region 音频流变量
+    public AudioSource audioSource;
+    public AudioSource remoteAudioSource;
+    public AudioStreamTrack audioTrack;
+    private RTCRtpSender audioSender;
+    private RTCRtpReceiver audioReceiver;
+    private AudioStreamTrack remoteAudioTrack;
     #endregion
     public void Init()
     {
@@ -157,6 +166,7 @@ public sealed class PeerConnectionController : IDisposable
             }
         };
         _peer = new RTCPeerConnection(ref _config);
+        VideoStats = new WebRTCVideoStats();
         //CreateDataChannel("data");
         RegisterCallbacks();
     }
@@ -372,9 +382,6 @@ public sealed class PeerConnectionController : IDisposable
 
     }
     #endregion
-
-    #region 视频流方法
-
     private void OnTrack(RTCTrackEvent e)
     {
         Debug.Log($"[Peer] Receive Track: {e.Track.Kind}");
@@ -386,8 +393,21 @@ public sealed class PeerConnectionController : IDisposable
             _videoReceiver = e.Receiver;
             _remoteVideoTrack.OnVideoReceived += OnVideoReceived;
             VideoStats.Start(_videoSender, _videoReceiver);
+        }else if(e.Track is AudioStreamTrack audioTrack)
+        {
+            Debug.Log("[Peer] Receive AudioTrack");
+            audioReceiver = e.Receiver;
+            remoteAudioTrack = audioTrack;
+            remoteAudioTrack.onReceived += OnAudioReceived;
+            remoteAudioSource.SetTrack(audioTrack);
+            remoteAudioSource.Play();
+            
         }
     }
+
+    #region 视频流方法
+
+
     public void CreateVideoTrack(Camera camera)
     {
         //RenderTexture texture = new RenderTexture(1920, 1080, 0);
@@ -481,6 +501,45 @@ public sealed class PeerConnectionController : IDisposable
         }
     }
 
+    #endregion
+
+    #region 音频流方法
+
+    public void CreateAudioTrack(AudioSource audioSource)
+    {
+        audioTrack = new AudioStreamTrack(audioSource);
+        this.audioSource = audioSource;
+        audioSender = _peer.AddTrack(audioTrack);
+    }
+    private int receiveCount;
+    private void OnAudioReceived(float[] data, int channels, int sampleRate)
+    {
+        receiveCount++;
+
+        if (receiveCount % 50 != 0)
+            return;
+
+        float max = 0f;
+        float sum = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float value = Mathf.Abs(data[i]);
+
+            if (value > max)
+                max = value;
+
+            sum += value * value;
+        }
+
+        float rms = Mathf.Sqrt(sum / data.Length);
+
+        Debug.Log(
+            $"Audio: samples={data.Length}, " +
+            $"channels={channels}, " +
+            $"sampleRate={sampleRate}, " +
+            $"max={max}, rms={rms}");
+    }
     #endregion
     public async Task<string> CreateOfferAsync()
     {

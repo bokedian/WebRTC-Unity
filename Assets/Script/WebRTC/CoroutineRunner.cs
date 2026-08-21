@@ -14,7 +14,6 @@ public class CoroutineRunner : MonoBehaviour
             {
                 GameObject obj = new GameObject();
                 instance = obj.AddComponent<CoroutineRunner>();
-                DontDestroyOnLoad(obj);
             }
             return instance;
         }
